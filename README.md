@@ -1,6 +1,6 @@
 # Kwawu Arm 3.0 - Socket Version
 
-This is functional device for those with forearm limb differences. It has better functionality and easier to assemble than the Kwawu 2.0 version.
+This is a 3D Printable functional device for those with forearm limb differences. It has better functionality and easier to assemble than the Kwawu 2.0 version.
 
 !!!! DO NOT PRINT THESE STL FILES DIRECTLY. !!!!!
 Download all the files and use the OpenSCAD to modify and scale the STL files.
