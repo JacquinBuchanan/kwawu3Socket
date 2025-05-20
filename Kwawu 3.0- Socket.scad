@@ -20,10 +20,12 @@ HandWidth = 96; //[65:186]
 // Elbow crease to wrist attachment (mm)
 ArmLength = 271; //[141: 564]
 // At what length to split between Upper and Lower arm pieces. Measured from elbow (mm)
-ArmSPlitLength = 135; //[10: 564]
+ArmSplitLength = 135; //[10: 564]
 // Circumferences(mm) of Forearm start at elbow creses seperate by 25mm
-ForearmCircumferences=[272, 268, 265, 261, 255, 0, 0, 0, 0, 0]; //[0: 542]
-// - Circumference of Bicep (mm)
+ForearmCircumferences1 = [272,268,265,261]; //[0:1:600]
+ForearmCircumferences2 = [255,0,0,0]; //[0:1:600]
+ForearmCircumferences3 = [0,0,0,0]; //[0:1:600]
+// Circumference of Bicep (mm)
 BicepCircumference = 294; //[160: 600]
 // Padding Thickness -inside forearm and cuff (mm)
 PaddingThickness = 2; //[0: 10]
@@ -41,8 +43,11 @@ PencilHolder = "No"; // [Yes,No]
 UpperVentingHoles = "None"; // [None,VentingHoles1,VentingHoles2,VentingHoles3]
 // Add Air Venting Holes In Lower Forearm
 LowerVentingHoles = "None"; // [None,VentingHoles1,VentingHoles2,VentingHoles3]
+// Options for Mechanisim at Elbow
+ElbowMechanisims = "Latch and Lever"; // [Latch and Lever,Lever Only,No Lever]  
 
 /* [Hidden] */
+ForearmCircumferences = concat(ForearmCircumferences1,ForearmCircumferences2,ForearmCircumferences3);
 
 
 SlotSize = 0.5;
@@ -959,14 +964,20 @@ module MakeArmUpper() {
                 // CUT OFF the bottom half of the arm. 
                 // We make the arm in two parts. We had to loft the entire arm 
                 // so it is smooth top to bottom
-                translate([-ForearmDiameterWPadding, -ForearmDiameterWPadding, -ArmSPlitLength-ArmLength])cube([ ForearmDiameterWPadding*2, ForearmDiameterWPadding*2, ArmLength], center= false);
+                translate([-ForearmDiameterWPadding, -ForearmDiameterWPadding, -ArmSplitLength-ArmLength])cube([ ForearmDiameterWPadding*2, ForearmDiameterWPadding*2, ArmLength], center= false);
             }
 
           //Add the elbow connectors and latch
           difference() {
               union() {
+                  if(ElbowMechanisims == "No Lever") {
+                     mirror([0,1,0])translate([ForearmDiameterWPadding/2 - ArmShellThickness-ElbowPartsScale * 1- elbowCenterOffset , 0, 0]) rotate(a=[0,90,0]) UpperArm2();
+              translate([-(ForearmDiameterWPadding/2 - ArmShellThickness- ElbowPartsScale * 1 + elbowCenterOffset), 0, 0]) rotate(a=[180,90,0]) UpperArm2();
+                      } else {
+                          
               translate([ForearmDiameterWPadding/2 - ElbowPartsScale * 1- elbowCenterOffset , 0, 0]) rotate(a=[0,90,0]) UpperArm1();
               translate([-(ForearmDiameterWPadding/2 - ArmShellThickness- ElbowPartsScale * 1 + elbowCenterOffset), 0, 0]) rotate(a=[180,90,0]) UpperArm2();
+                  }
               }
               
               //Cut the top off the cuff post. We do this here because we always want a 1mm gap between the ratchet and the cuff. Normally scaling makes it too big for large arms and too small for small arms
@@ -985,9 +996,9 @@ module MakeArmUpper() {
             MakeArmLoft(innerShell, (WristBoltDia)/wristdiameter, 2);
         
             wristdiameter = 53.39*HandScale;
-            //Add a cylinder for the wrist botl threads to be cut from. 
+            //Add a cylinder for the wrist bolt threads to be cut from. 
            //Add inner threads for wrist bolt holder
-            translate([0, -4*ForeArmCircumferenceScale, -ArmLength ]) cylinder(d = wristdiameter -4, h = 28 * ForeArmCircumferenceScale );
+            color("blue")translate([0, -4*ForeArmCircumferenceScale, -ArmLength ]) cylinder(d = wristdiameter -4, h = 28 * ForeArmCircumferenceScale );
     
         }
           
@@ -1012,15 +1023,17 @@ module MakeArmUpper() {
         // it is always a 4 mm hole. Not this is likly in Lower Arm section, but just to be sure
         translate([ ForearmDiameterWPadding/4, 0, -ArmLength + 40 * ForeArmCircumferenceScale]) rotate(a=[65,0,90]) cylinder(d=4, h=ForearmDiameterWPadding/2,center=true, $fn=20);
                 
+         if(ElbowMechanisims != "No Lever") {
         // Make hole for Latch cover screw, note it is always a #4 or 3mm sheet metal screw
         translate([ForearmDiameterWPadding/2, 0, -45*ElbowPartsScale  ])rotate(a=[90,0,90])cylinder(d=2.5, h=ForearmDiameterWPadding,center=true, $fn=20);
          
                  
         // Make hole for Latch rotation pin, note it is always a 2mm rode
         translate([ForearmDiameterWPadding/2 + 10*ElbowPartsScale +1, 4.25*ElbowPartsScale , -17.713*ElbowPartsScale, ])rotate(a=[90,0,90])cylinder(d=2.7, h=ElbowPartsScale * 20,center=true, $fn=20);
+         }
 
         // Check if the upper arm is the entire arm
-        if(ArmSPlitLength < ArmLength) {
+        if(ArmSplitLength < ArmLength) {
         
           // cut out the lip space for lower arm
           scaleofShell = (ForearmDiameterWPadding-2*ArmShellThickness)/ForearmDiameterWPadding;
@@ -1030,7 +1043,7 @@ module MakeArmUpper() {
                 //We need to reubild the arm loft in order to cut a 
                 //  lip out of it to conenct the two arm sections.
                 MakeArmShell(2);
-                translate([0, 0, -ArmSPlitLength])cube([ ForearmDiameterWPadding*2, ForearmDiameterWPadding*2, 2*ArmShellThickness + 2], center= true);
+                translate([0, 0, -ArmSplitLength])cube([ ForearmDiameterWPadding*2, ForearmDiameterWPadding*2, 2*ArmShellThickness + 2], center= true);
             }
         } else  {
           // cut large hole for wrist bolt 
@@ -1094,8 +1107,13 @@ module MakeArmUpper() {
     difference() {
         translate([ ForearmDiameterWPadding/2 - elbowCenterOffset - 2*ElbowPartsScale ,0, 0])rotate(a=[90,0,90]) thread_in(ElbowBoltDiameter, ElbowPartsScale *22);
         
+        if(ElbowMechanisims == "No Lever") {
+        //Cut threads off on outside
+        translate([ ForearmDiameterWPadding/2 - ArmShellThickness - ElbowPartsScale * 1+ elbowCenterOffset + ElbowPartsScale * 15 , 0, 0]) rotate(a=[90,0,90]) cylinder(d=ElbowBoltDiameter + 1, h=ElbowPartsScale * 16,center=true, $fn=20);
+        } else {
         //Cut threads off on outside
         translate([ ForearmDiameterWPadding/2 - ElbowPartsScale * 1- elbowCenterOffset + ElbowPartsScale * 22 +1 , 0, 0]) rotate(a=[90,0,90]) cylinder(d=ElbowBoltDiameter + 1, h=ElbowPartsScale * 10,center=true, $fn=20);
+        }
         
         //Cut threads off on inside
         translate([- elbowCenterOffset, 0, 0])rotate(a=[90,0,90]) cylinder(d=ElbowBoltDiameter + 1, h=ForearmDiameterWPadding,center=true, $fn=20);
@@ -1114,7 +1132,7 @@ module MakeArmUpper() {
         }
     
     // Check if the upper arm is the entire arm
-    if(ArmSPlitLength < ArmLength) {
+    if(ArmSplitLength < ArmLength) {
         
         // Create a registration block
         difference() {
@@ -1128,21 +1146,24 @@ module MakeArmUpper() {
                 //  lip out of it to conenct the two arm sections.
                 MakeArmShell(2);
                 //Leave a registration block, this may or not be ther based on the hollowing
-                translate([0, ForearmDiameterWPadding/2, -ArmSPlitLength + ArmShellThickness + 0.5])cube([ 2*ArmShellThickness , ForearmDiameterWPadding/2, 2*ArmShellThickness+3], center= true);
+                translate([0, ForearmDiameterWPadding/2, -ArmSplitLength + ArmShellThickness + 0.5])cube([ 2*ArmShellThickness , ForearmDiameterWPadding/2, 2*ArmShellThickness+3], center= true);
             }
         
         // CUT OFF the registration flat with arm1
-        translate([-ForearmDiameterWPadding, -ForearmDiameterWPadding, -ArmSPlitLength-ArmLength])cube([ ForearmDiameterWPadding*2, ForearmDiameterWPadding*2, ArmLength], center= false);
+        translate([-ForearmDiameterWPadding, -ForearmDiameterWPadding, -ArmSplitLength-ArmLength])cube([ ForearmDiameterWPadding*2, ForearmDiameterWPadding*2, ArmLength], center= false);
         }
     } else {
         //add wrist bolt threads
         difference() {
                 
              //Add inner threads for wrist bolt holder
-            translate([0, -4*ForeArmCircumferenceScale, -ArmLength - 2 * ForeArmCircumferenceScale]) thread_in(WristBoltDia, 36 * ForeArmCircumferenceScale );
+            color("red")translate([0, -4*ForeArmCircumferenceScale, -ArmLength - 2 * ForeArmCircumferenceScale]) thread_in(WristBoltDia, 36 * ForeArmCircumferenceScale );
             
              // truncate threads length to wrist end
             translate([0, -4*ForeArmCircumferenceScale, -ArmLength - ForearmDiameterWPadding/2]) cube(ForearmDiameterWPadding,center=true);
+            
+            // truncate threads inside so they do not extend up into the arm
+            translate([0, -4*ForeArmCircumferenceScale, -ArmLength + ForearmDiameterWPadding/2+28 * ForeArmCircumferenceScale ]) cube(ForearmDiameterWPadding,center=true);
             
           //Cut out the hole for wrist bolt pin, note the pin is always a #4 or 3mm sheet metal screw
           translate([ForearmDiameterWPadding/4 + 5 * ForeArmCircumferenceScale, 0, -ArmLength + 7.5 * ForeArmCircumferenceScale]) 
@@ -1190,7 +1211,7 @@ module MakeArmLip() {
     //  lip out of it to conenct the two arm sections.
     MakeArmShell(2);
     
-    translate([0, 0, -ArmSPlitLength])cube([ ForearmDiameterWPadding*2, ForearmDiameterWPadding*2, 2*ArmShellThickness], center= true);
+    translate([0, 0, -ArmSplitLength])cube([ ForearmDiameterWPadding*2, ForearmDiameterWPadding*2, 2*ArmShellThickness], center= true);
     
   }
 }
@@ -1222,10 +1243,10 @@ module MakeLowerArmLip() {
           // echo("scaleofLip", s, drop);
        
           // CUT OFF the top of this attach lip. this bit attaches the actual lip to the arm itself. Since the lip itself must be smaller
-          translate([-ForearmDiameterWPadding, -ForearmDiameterWPadding, -ArmSPlitLength])cube([ ForearmDiameterWPadding*2, ForearmDiameterWPadding*2, ArmLength], center= false);
+          translate([-ForearmDiameterWPadding, -ForearmDiameterWPadding, -ArmSplitLength])cube([ ForearmDiameterWPadding*2, ForearmDiameterWPadding*2, ArmLength], center= false);
         
           //this cut makes sure the ring is only on the interior of the arm
-          translate([0,0,drop+0.05*ArmSPlitLength])scale([scaleofCutTool,scaleofCutTool,1.05])children();
+          translate([0,0,drop+0.05*ArmSplitLength])scale([scaleofCutTool,scaleofCutTool,1.05])children();
         }
 
 }
@@ -1235,7 +1256,7 @@ module MakeLowerArmLip() {
 //***************************
 module MakeArmLower() {
     
-if(ArmSPlitLength < ArmLength) {
+if(ArmSplitLength < ArmLength) {
         
   //The top of the soceket is off center a little, compaired to the wrist
   elbowCenterOffset = 1.5*ForeArmCircumferenceScale;
@@ -1249,7 +1270,7 @@ if(ArmSPlitLength < ArmLength) {
             // CUT OFF the top half of the arm. 
             // We make the arm in two parts. We had to loft the entire arm 
             // so it is smooth top to bottom
-            translate([-ForearmDiameterWPadding*2, -ForearmDiameterWPadding*2, -ArmSPlitLength])cube([ ForearmDiameterWPadding*4, ForearmDiameterWPadding*4, ArmLength], center= false);
+            translate([-ForearmDiameterWPadding*2, -ForearmDiameterWPadding*2, -ArmSplitLength])cube([ ForearmDiameterWPadding*4, ForearmDiameterWPadding*4, ArmLength], center= false);
             
             // cut large hole for wrist bolt 
             // the -0.05 on bolt diamter is to make sure threads attach to walls
@@ -1264,17 +1285,20 @@ if(ArmSPlitLength < ArmLength) {
             MakeLowerArmLip() MakeArmLip();
         
             //Cut a registration out of the lip
-            translate([0, ForearmDiameterWPadding/2, -ArmSPlitLength])cube([ 2*ArmShellThickness + 1, ForearmDiameterWPadding, 2*ArmShellThickness+3], center= true);
+            translate([0, ForearmDiameterWPadding/2, -ArmSplitLength])cube([ 2*ArmShellThickness + 1, ForearmDiameterWPadding, 2*ArmShellThickness+3], center= true);
         }
         
         //add wrist bolt threads
         difference() {
-                
+          
              //Add inner threads for wrist bolt holder
-            translate([0, -4*ForeArmCircumferenceScale, -ArmLength - 2 * ForeArmCircumferenceScale]) thread_in(WristBoltDia, 36 * ForeArmCircumferenceScale );
+            color("red")translate([0, -4*ForeArmCircumferenceScale, -ArmLength - 2 * ForeArmCircumferenceScale]) thread_in(WristBoltDia, 36 * ForeArmCircumferenceScale );
             
              // truncate threads length to wrist end
             translate([0, -4*ForeArmCircumferenceScale, -ArmLength - ForearmDiameterWPadding/2]) cube(ForearmDiameterWPadding,center=true);
+            
+            // truncate threads inside so they do not extend up into the arm
+            translate([0, -4*ForeArmCircumferenceScale, -ArmLength + ForearmDiameterWPadding/2+28 * ForeArmCircumferenceScale ]) cube(ForearmDiameterWPadding,center=true);
         }
    
     }
@@ -1409,15 +1433,18 @@ module MakeCuffBase(oneOrTwo, CuffWidth, CuffYoffset, offset, height) {
         }
 
         // import cuff bolt holder
-        if(oneOrTwo == 1) 
-            MakeCuff1Imports();
+        if(oneOrTwo == 1) {
+            if(ElbowMechanisims == "No Lever") 
+               mirror([0,1,0])MakeCuff2Imports();
+            else
+               MakeCuff1Imports();
+        }
         
         if(oneOrTwo == 2) 
             MakeCuff2Imports();
         
         // cuff stiffener
         hull() {
-
             rotate(a=[90,-90,-90]) translate([8*CuffScale,4*CuffScale, -CuffScale  * 49 -1])cylinder(d=7*CuffScale, h=1);
             rotate(a=[90,-90,-90]) translate([8*CuffScale,-4*CuffScale, -CuffScale  * 49 -1])cylinder(d=7*CuffScale, h=1);
             
@@ -1575,13 +1602,24 @@ module MakeCuffLeatherTemplate() {
 //***************************
 module MakeCuff1() {
 
+    if(ElbowMechanisims == "No Lever") {
+            //NOTE: the + 17 *ForeArmCircumferenceScal is becasue the Cuff 1 is 17mm - Armshellthickness thicker than the Cuff2
+
         
-    //NOTE: the - 3.5 *CuffScale is becasue the Cuff 1 is 7mm thicker than the Cuff2
+        offset = max(-13 *ElbowPartsScale + ArmShellThickness,  - (  BicepDiameterWPadding- ForearmDiameterWPadding)/2-13 *ElbowPartsScale + ArmShellThickness );
+        
+        MakeCuffBase(1, BicepCircumferenceWPadding/2 - CuffScale * 8.5 - CuffScale * 4, CuffScale  * -5.5, offset, 6.5 *ElbowPartsScale + ArmShellThickness );
+    } else {
+            
+        //NOTE: the - 3.5 *CuffScale is becasue the Cuff 1 is 7mm thicker than the Cuff2
+        
+        offset = max(-10 *ElbowPartsScale,   - (  BicepDiameterWPadding- ForearmDiameterWPadding)/2 );
+        
+            MakeCuffBase(1, BicepCircumferenceWPadding/2  - CuffScale * 0.25, 0, offset, 14 *ElbowPartsScale);
+    }
     
-    offset = max(-10 *ElbowPartsScale,   - (  BicepDiameterWPadding- ForearmDiameterWPadding)/2 );
     
-    
-    MakeCuffBase(1, BicepCircumferenceWPadding/2  - CuffScale * 0.25, 0, offset, 14 *ElbowPartsScale);
+
 }
 
 //***************************
